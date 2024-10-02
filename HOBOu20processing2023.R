@@ -198,6 +198,28 @@ hobo23<-merge(hobo2223.2, hobo2223.staff.2, by.all = Station_ID)
 #now use equations to graph! #####
 
 
+#viking creek
+#y = 5.8591x^2 - 2.9511x
+#use case when
+
+hobo23.2<- hobo23 %>% mutate(PredDepth = case_when(grepl("VIKING-CRK-WA", Station_ID) ~ 3.2716*(SensorDepth)^2 - 1.7532*(SensorDepth),
+                                                   grepl("LAZY-CRK-S", Station_ID) ~  5.703*(SensorDepth)^1.9181,
+                                                   grepl("WF-R-SPB", Station_ID) ~  21.811*(SensorDepth)^2.1612,
+                                                   grepl("WALKER-CRK-MR", Station_ID) ~ 6.4718*(SensorDepth)^2 + 0.6276*(SensorDepth),
+                                                   grepl("SWIFT-CRK-DEL", Station_ID) ~ 175.31*(SensorDepth) + 35.729,
+                                                   grepl("SMITH-CRK-ELD", Station_ID) ~ 15.002*(SensorDepth) - 4.2308,
+                                                   grepl("HELLR-CRK-T". Station_ID) ~ 11.674*(SensorDepth)^3.3306,
+                                                   grepl("HASK-CRK-T", Station_ID) ~ 12.176*(SensorDepth)^2 + 6.2169*(SensorDepth) - 2.8841,
+                                                   grepl("COW-CRK-PA", Station_ID) ~ 0.1096e^2.0731*(SensorDepth),
+                                                   grepl("BEAV-CRK-RR", Station_ID) ~ 5.1051*(SensorDepth) - 1.1008))
+
+
+
+
+#graph
+ggplot(data = hobo23.2 %>% filter(Station_ID == "VIKING-CRK-WA"))+
+  geom_point(aes(x = date, y = WaterDepth), color = "blue")+
+  geom_point(aes(x = date, y = PredDepth), color = "darkred")
 
 
 
