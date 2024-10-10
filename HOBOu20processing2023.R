@@ -23,6 +23,7 @@ read_csv_filename <- function(filename){
   ret
 }
 
+
 #uploading files as a group
 setwd("C:/Users/User/Dropbox/database/WF WQ DATA/HOBO-U20/U-20CSVs2022-2023/WithDepth")
 temp = list.files(pattern = "\\.csv$")
@@ -80,6 +81,7 @@ unique(hobo2223.2$Station_ID)
 hobo23<-hobo2223.2
   
   
+
 #evetually do all of this and actually include the CORRECTED (for barmetric and time zone) 2022 data  #####
 
 
@@ -134,6 +136,8 @@ gauges<- gauges %>% mutate(year = year(Date))
 
 hobo23.2$date<- mdy(hobo23.2$date)
 
+hobo23.2<- hobo23.2 %>% mutate(year = year(date), month = month(date), day = yday(date))
+
 glimpse(hobo23.2)
 
 #filter to just 2022 on 
@@ -172,47 +176,47 @@ ggplot()+
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "BEAV-CRK-RR"),
              aes(x = Date, y = Staff), color = "darkred", size = 2) 
-#this data is really bad -- why? mostly in 2023
+#this data is really bad -- why? mostly in 2023-- check if it was calibrated wrong??
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "COW-CRK-PA"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
 
-#bad in 2022
+#bad in 2022 -- maybe calibrated wrong??
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "HASK-CRK-T"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "HASK-CRK-T"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
 
-
+#-- check calibration for 2023
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "HELLR-CRK-T"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "HELLR-CRK-T"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
-#bad in 2023 just a bit off
+#bad in 2023 just a bit off-- check calibration for 2023
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "LAZY-CRK-S"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "LAZY-CRK-S"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
-#same here
+#this one looks decent
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "SMITH-CRK-ELD"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "SMITH-CRK-ELD"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
 
-#really bad in 2022
+#really bad 
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "SWIFT-CRK-DEL"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
 
-
+#pretty good
 ggplot()+
   geom_point(data = hobo23.2 %>% filter(Station_ID == "VIKING-CRK-WA"), 
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
@@ -231,8 +235,285 @@ ggplot()+
 
 
 
+#next steps individual trib QA/QC ####
+#this is done manually just by looking at what sticks out 
+#then verifying it in the data and with weather data
+
+
+
+#whitefish river QA/QC ####
+wfriver<-hobo23.2 %>% filter(Station_ID == "WF-R-SPB")
+  
+  
+ggplot()+
+  geom_point(data = wfriver %>% filter(date > "2022-08-31"), 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+ geom_point(data = wfriver %>% filter(Station_ID == "WF-R-SPB"),
+             aes(x = date, y = TempF), color = "darkred", size = 2)+
+  geom_point(data = wfriver %>% filter(Station_ID == "WF-R-SPB"),
+             aes(x = date, y = AbsPresPsi), color = "black", size = 2)
+
+
+#group by day and test range?
+glimpse(wfriver)
+wfriver<- wfriver %>% group_by(date) %>% mutate(max = max(WaterDepth), min = min(WaterDepth), range = max-min)
+
+#okay first step lets just remove any days where range is over two feet
+#and where water depth falls below 0
+
+wfriver.2<- wfriver %>% filter(range < 1.5) %>% filter(WaterDepth > 0)
+
+#lets see it
+ggplot()+
+  geom_point(data = wfriver, 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = wfriver.2, 
+             aes(x = date, y = WaterDepth), color = "black", alpha = .5)
+
+
+p<-ggplot()+
+  geom_point(data = wfriver.2 %>% filter(date > "2022-08-31"), 
+             aes(x = date, y = WaterDepth), color = "black", alpha = .5)
+#now you can hover to pick out problem days
+ggplotly(p)
+
+#remove particularyly bad days
+wfriver.3 <-  wfriver.2 %>% 
+  filter(!date == "2022-12-24", !date == "2022-11-30", !date == "2022-12-21", 
+         !date == "2023-01-30", !date == "2023-01-31", !date == "2023-02-22",
+         !date == "2023-01-27", !date == "2023-02-23", !date == "2023-03-11",
+         !date == "2023-02-27", !date == "2023-02-21", !date == "2023-03-23")
+
+
+#graph again
+p<-ggplot()+
+  geom_point(data = wfriver.3 %>% filter(date > "2022-08-31"), 
+             aes(x = date, y = WaterDepth), color = "black", alpha = .5)
+
+ggplotly(p)
+
+#now take out some specific times that were bad####
+wfriver.4<-wfriver.3 %>% filter(!(date == "2023-04-21" & time == "07:30:00 AM"),
+                                !(date == "2023-03-27" & time == "07:00:00 AM"),
+                                !(date == "2023-03-27" & time == "07:30:00 AM"))
+
+
+#graph again
+p<-ggplot()+
+  geom_point(data = wfriver.4, 
+             aes(x = date, y = WaterDepth), color = "black", alpha = .5)
+
+ggplotly(p)
+
+
+
+
+
+
+
+#do smith or lazy next because they are the other two decent ones
+smith<- hobo23.2 %>% filter(Station_ID == "SMITH-CRK-ELD")
+
+p <-ggplot()+
+  geom_point(data = hobo23.2 %>% filter(Station_ID == "SMITH-CRK-ELD"), 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SMITH-CRK-ELD"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+print(ggplot()+
+        geom_point(data = hobo23.2 %>% filter(Station_ID == "SMITH-CRK-ELD"), 
+                   aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+        geom_point(data = gauges.2 %>% filter(Station_ID == "SMITH-CRK-ELD"),
+                   aes(x = Date, y = Staff), color = "darkred", size = 2))
+
+
+#group by day and test range?
+smith<- smith %>% group_by(date) %>% mutate(max = max(WaterDepth), min = min(WaterDepth), range = max-min)
+
+#filter out specific date and time points
+smith.2<-smith %>% filter(!(date == "2023-11-14" & time == "02:30:00 PM"),
+                          !(date == "2023-03-14" & time == "03:30:00 AM"))
+
+
+ggplot()+
+  geom_point(data = smith.2, 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SMITH-CRK-ELD"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+#lazy creek QA/QC#####
+#i re-did the lazy creek syncing using september and it matches up much better -- so I will use that
+#that file is the one that says depth2
+lazy <- hobo23.2 %>% filter(Station_ID == "LAZY-CRK-S")
+lazy<- lazy %>%  group_by(date) %>% mutate(max = max(WaterDepth), min = min(WaterDepth), range = max-min)
+
+p<-ggplot()+
+  geom_point(data = lazy, 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "LAZY-CRK-S"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+ggplot()+
+  geom_point(data = lazy, 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "LAZY-CRK-S"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+#this looks good the high range days all check out and there aren't any isolated points
+
+#cow creek QA/QC #####
+#again had to switch this to the september staff gauge to calibrate it so
+#the correct file is depth2
+cow <- hobo23.2 %>% filter(Station_ID == "COW-CRK-PA")
+cow <- cow %>% group_by(date) %>% mutate(max = max(WaterDepth), min = min(WaterDepth), range = max-min)
+
+ggplot()+
+  geom_point(data =cow, 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p <- ggplot()+
+  geom_point(data = hobo23.2 %>% filter(Station_ID == "COW-CRK-PA"), 
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#cut out range over 2
+cow.2 <- cow %>% filter(range < 2)
+
+ggplot()+
+  geom_point(data = cow.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<-ggplot()+
+  geom_point(data = cow.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#next step -> check all dates on the sticky note maybe also just take out all negative values
+
+#take out specific dates
+cow.3<-cow.2 %>% filter(!(date == "2022-11-26"),!(date == "2022-11-24"),!(date == "2022-11-25"),
+                      !(date == "2022-12-21"), !(date == "2022-12-22"), !(date == "2022-12-23"),
+                      !(date == "2023-11-01"), !(date == "2022-11-12"), !(date == "2022-11-13"),
+                      !(date == "2022-11-14"), !(date == "2022-11-15"), !(date == "2022-11-16"),
+                      !(date == "2022-11-17"), !(date == "2022-11-18"), !(date == "2022-11-19"),
+                      !(date == "2022-11-20"), !(date == "2022-11-21"), !(date == "2022-11-21"),
+                      !(date == "2022-11-11"), !(date == "2023-02-27"))
+
+
+ggplot()+
+  geom_point(data = cow.3,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+
+p<-ggplot()+
+  geom_point(data = cow.3,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "COW-CRK-PA"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#okay I think this one is good? messier than the others but It's hard to count things out when its flashy
+
+#haskill creek QA/QC####
+haskill<-hobo23.2 %>% filter(Station_ID == "HASK-CRK-T")
+
+haskill <- haskill %>% group_by(date) %>% mutate(max = max(WaterDepth), min = min(WaterDepth), range = max-min)
+
+ggplot()+
+  geom_point(data = haskill,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HASK-CRK-T"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p <- ggplot()+
+  geom_point(data = haskill,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HASK-CRK-T"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#take out certain times and dates
+
+
+haskill.2 <- haskill %>% filter(!(date == "2022-10-04" & time == "10:30:00 AM"), !(date == "2022-10-04" & time == "10:31:26 AM"),
+                                !(date == "2022-10-04" & time == "10:31:27 AM"), !(date == "2022-10-04" & time == "11:00:00 AM"),
+                                !(date == "2022-10-04" & time == "11:30:00 AM"), !(date == "2023-11-14" & time == "02:30:00 PM"),
+                                !(date == "2023-11-14" & time == "03:00:00 PM"), !(date == "2023-11-14" & time == "03:30:00 PM"),
+                                !(date == "2023-11-14" & time == "04:00:00 PM"), !(date == "2023-11-14" & time == "04:30:00 PM"),
+                                !(date == "2023-11-14" & time == "05:00:00 PM"), !(date == "2023-11-14" & time == "05:30:00 PM"),
+                                !(date == "2023-11-14" & time == "06:00:00 PM"), !(date == "2023-11-14" & time == "06:30:00 PM"),
+                                !(date == "2023-11-14" & time == "07:00:00 PM"), !(date == "2023-11-14" & time == "07:30:00 PM"),
+                                !(date == "2023-11-14" & time == "08:00:00 PM"), !(date == "2023-11-14" & time == "08:30:00 PM"),
+                                !(date == "2023-11-14" & time == "09:00:00 PM"), !(date == "2023-11-14" & time == "09:30:00 PM"),
+                                !(date == "2023-11-14" & time == "10:00:00 PM"), !(date == "2023-11-14" & time == "10:30:00 PM"),
+                                !(date == "2023-11-14" & time == "11:00:00 PM"), !(date == "2023-11-14" & time == "11:30:00 PM"))
+                                  
+
+ggplot()+
+  geom_point(data = haskill.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HASK-CRK-T"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p <- ggplot()+
+  geom_point(data = haskill.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HASK-CRK-T"),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+
+#hellroaring re calibrate 2023 ####
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #next steps
-#qa/qc this look at what rdg did
+#save the edited data
+#add to previous edited data
+#replicate previous graphs (I think there is script for this)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
