@@ -82,6 +82,7 @@ hobo23<-hobo2223.2
   
   
 
+
 #evetually do all of this and actually include the CORRECTED (for barmetric and time zone) 2022 data  #####
 
 
@@ -111,6 +112,7 @@ hobo23.2<- hobo23 %>% mutate(PredCFS = case_when(grepl("VIKING-CRK-WA", Station_
 ggplot(data = hobo23.2 %>% filter(Station_ID == "VIKING-CRK-WA"))+
   geom_point(aes(x = date, y = WaterDepth), color = "blue")+
   geom_point(aes(x = date, y = PredCFS), color = "darkred")
+
 
 
 #questions--- are we comparing water depth to CFS??? how are we meant to compare this??
@@ -483,14 +485,58 @@ ggplotly(p)
 
 
 #hellroaring re calibrate 2023 ####
+#used september for 2023 calibration 
+#NOTE: hellroaring is off by 8 minutes from the atmoshpereic data collector 
+#so all water depth is based on interpolation, WATCH OUT FOR THIS IN THE FUTURE
+hellroaring<- hobo23.2 %>% filter(Station_ID == "HELLR-CRK-T")
+#range is low for all data
+hellroaring <- hellroaring %>% group_by(date) %>% mutate(max = max(WaterDepth, na.rm = TRUE), min = min(WaterDepth, na.rm = TRUE), range = max-min)
+
+ggplot()+
+  geom_point(data = hellroaring,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HELLR-CRK-T", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = hellroaring,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HELLR-CRK-T", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#TAKE out specific dates and times ####
+hellroaring.2 <- hellroaring %>% filter(!(date == "2022-04-05"), !(date == "2022-11-07"), !(date == "2022-11-28"),
+                                        !(date == "2022-11-29"), !(date == "2022-11-30"), !(date == "2023-01-03"),
+                                        !(date == "2023-02-01"), !(date == "2023-02-22"), 
+                                        !(date == "2023-11-14" & time == "02:22:08 PM"), !(date == "2022-11-08"),
+                                        !(date == "2022-12-01"), !(date == "2022-11-10"), !(date == "2022-11-08"),
+                                        !(date == "2022-12-01"), !(date == "2023-01-04"), !(date == "2023-01-28"),
+                                        !(date == "2023-01-29"), !(date == "2023-01-31"), !(date == "2023-02-16"),
+                                        !(date == "2023-02-25"), !(date == "2023-02-21"), !(date == "2022-11-09"), 
+                                        !(date == "2022-12-27"), !(date == "2023-01-23"), !(date == "2023-10-28"),
+                                        !(date == "2023-02-23"), !(date == "2023-01-30"), !(date == "2023-02-24"))
 
 
+ggplot()+
+  geom_point(data = hellroaring.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HELLR-CRK-T", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
 
+p<- ggplot()+
+  geom_point(data = hellroaring.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "HELLR-CRK-T", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
 
+ggplotly(p)
 
+#hellroaring is off by 8 minutes from the atmoshpereic data collector 
+#so all water depth is based on interpolation
 
-
-
+#hellroaring should be good move on to next one #####
 
 
 
