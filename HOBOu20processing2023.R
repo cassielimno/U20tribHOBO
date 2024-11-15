@@ -10,7 +10,7 @@ library(readr)
 library(janitor)
 library(lubridate)
 library(ggplot2)
-
+library(plotly)
 
 #can this be put in a loop for all of them????
 
@@ -27,6 +27,7 @@ read_csv_filename <- function(filename){
 #uploading files as a group
 setwd("C:/Users/User/Dropbox/database/WF WQ DATA/HOBO-U20/U-20CSVs2022-2023/WithDepth")
 temp = list.files(pattern = "\\.csv$")
+
 
 #empty dataframe for loop
 hobo2223<-data.frame()
@@ -74,6 +75,7 @@ hobo2223.2<- hobo2223 %>%  mutate(Station_ID = case_when(grepl("Whitefish", Sour
 
 
 
+
 #CHECK TO see if this worked
 unique(hobo2223.2$Station_ID)
 
@@ -81,8 +83,6 @@ unique(hobo2223.2$Station_ID)
 hobo23<-hobo2223.2
   
   
-
-
 #evetually do all of this and actually include the CORRECTED (for barmetric and time zone) 2022 data  #####
 
 
@@ -154,7 +154,7 @@ gauges.2<- gauges %>%  mutate(Station_ID = case_when(grepl("WF River Outlet", Si
                                                                      grepl("Walker", Site) ~ "WALKER-CRK-MR",
                                                                      grepl("Viking", Site) ~ "VIKING-CRK-WA",
                                                                      grepl("SWIFT_Del", Site) ~ "SWIFT-CRK-DEL",
-                                                                     grepl("Swift", Site) ~ "SWIFT-CRK-DEL",
+                                                                     grepl("Swift Del", Site) ~ "SWIFT-CRK-DEL",
                                                                      grepl("Smith", Site) ~ "SMITH-CRK-ELD",
                                                                      grepl("Lazy", Site) ~ "LAZY-CRK-S",
                                                                      grepl("Hellroaring", Site) ~ "HELLR-CRK-T",
@@ -171,6 +171,7 @@ ggplot()+
              aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
   geom_point(data = gauges.2 %>% filter(Station_ID == "WF-R-SPB"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
+
 
 
 ggplot()+
@@ -308,12 +309,22 @@ p<-ggplot()+
 ggplotly(p)
 
 
+#lets look at temp
+ggplot()+
+  geom_point(data = wfriver.4,  
+             aes(x = date, y = TempF), color = "blue", alpha = .5)
+
+#CFS
+ggplot()+
+  geom_point(data = wfriver.4,  
+             aes(x = date, y = PredCFS), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "WF-R-SPB", year < 2024),
+             aes(x = Date, y = CFS), color = "darkred", size = 2)
 
 
 
 
-
-#do smith or lazy next because they are the other two decent ones
+#do smith QA/QC ####
 smith<- hobo23.2 %>% filter(Station_ID == "SMITH-CRK-ELD")
 
 p <-ggplot()+
@@ -345,6 +356,18 @@ ggplot()+
   geom_point(data = gauges.2 %>% filter(Station_ID == "SMITH-CRK-ELD"),
              aes(x = Date, y = Staff), color = "darkred", size = 2)
 
+#lets look at temp
+ggplot()+
+  geom_point(data = smith.2,  
+             aes(x = date, y = TempF), color = "blue", alpha = .5)
+
+#CFS
+ggplot()+
+  geom_point(data = smith.2,  
+             aes(x = date, y = PredCFS), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SMITH-CRK-ELD", year < 2024),
+             aes(x = Date, y = CFS), color = "darkred", size = 2)
+
 #lazy creek QA/QC#####
 #i re-did the lazy creek syncing using september and it matches up much better -- so I will use that
 #that file is the one that says depth2
@@ -366,6 +389,18 @@ ggplot()+
              aes(x = Date, y = Staff), color = "darkred", size = 2)
 
 #this looks good the high range days all check out and there aren't any isolated points
+
+#lets look at temp
+ggplot()+
+  geom_point(data = lazy,  
+             aes(x = date, y = TempF), color = "blue", alpha = .5)
+
+#CFS
+ggplot()+
+  geom_point(data = lazy,  
+             aes(x = date, y = PredCFS), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "LAZY-CRK-S", year < 2024),
+             aes(x = Date, y = CFS), color = "darkred", size = 2)
 
 #cow creek QA/QC #####
 #again had to switch this to the september staff gauge to calibrate it so
@@ -538,14 +573,247 @@ ggplotly(p)
 
 #hellroaring should be good move on to next one #####
 
+#viking QA/QC ####
+viking<- hobo23.2 %>% filter(Station_ID == "VIKING-CRK-WA")
+
+viking <- viking %>% group_by(date) %>% mutate(max = max(WaterDepth, na.rm = TRUE), min = min(WaterDepth, na.rm = TRUE), range = max-min)
+
+ggplot()+
+  geom_point(data = viking,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "VIKING-CRK-WA", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = viking,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "VIKING-CRK-WA", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#remove specific dates
+#Im gonna leave in 2022-06-14 and 15 because there was rain that day, ####
+#but it would be a major high for viking creek so idk 
+
+viking.2<- viking %>% filter(!(date == "2022-12-20"), !(date == "2022-12-21"), 
+                             !(date == "2022-12-22"), !(date == "2022-12-23"),
+                             !(date == "2022-12-24"))
+
+ggplot()+
+  geom_point(data = viking.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "VIKING-CRK-WA", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = viking.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "VIKING-CRK-WA", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#lets look at temp
+ggplot()+
+  geom_point(data = viking.2,  
+             aes(x = date, y = TempF), color = "blue", alpha = .5)
+
+#CFS
+ggplot()+
+  geom_point(data = viking.2,  
+             aes(x = date, y = PredCFS), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "VIKING-CRK-WA", year < 2024),
+             aes(x = Date, y = CFS), color = "darkred", size = 2)
 
 
+#Swift QA/QC ####
+swift <- hobo23.2 %>% filter(Station_ID == "SWIFT-CRK-DEL")
+
+swift <- swift %>% group_by(date) %>% mutate(max = max(WaterDepth, na.rm = TRUE), min = min(WaterDepth, na.rm = TRUE), range = max-min)
+
+ggplot()+
+  geom_point(data = swift,  
+             aes(x = date, y = WaterDepth, color = Source), alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = swift,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+#check alignment of 2022 and 2023 data 
+#changed 2022 to july and changed 2023 to may
+
+#take out any crazy ranges
+swift.2<- swift %>% filter(range < 2, WaterDepth > -3)
+
+ggplot()+
+  geom_point(data = swift.2,  
+             aes(x = date, y = WaterDepth,), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = swift.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+ggplotly(p)
+
+#take out specific days
+#in the past all data was just cut at 0 so I'm gonna do the same
+#in the past data was also cut starting in march so im gonna match that as well
+
+swift.3<- swift.2 %>% filter(!(date == "2023-06-16")) %>% filter(month > 2) %>% 
+                filter(WaterDepth > 0)
 
 
+ggplot()+
+  geom_point(data = swift.3,  
+             aes(x = date, y = WaterDepth,), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = swift.3,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+ggplotly(p)
+
+#take out april and october 2022 ####
+swift.4<- swift.3 %>% filter(!between(date, as.Date('2022-04-01'), as.Date('2022-04-30'))) %>% 
+       filter(!between(date, as.Date('2022-10-01'), as.Date('2022-10-31')))
+
+ggplot()+
+  geom_point(data = swift.4,  
+             aes(x = date, y = WaterDepth,), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = swift.4,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+ggplotly(p)
+
+#cut out more of the winter, cut out after may 20th
+swift.5 <- swift.4 %>% filter(!between(date, as.Date('2022-08-01'), as.Date('2023-03-01'))) %>% 
+        filter(!between(date, as.Date('2023-05-20'), as.Date('2023-08-30')))
+
+ggplot()+
+  geom_point(data = swift.5,  
+             aes(x = date, y = WaterDepth,), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = swift.5,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "SWIFT-CRK-DEL", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+ggplotly(p)
+
+#calling it here
+
+#walker QAQC ####
+walker<- hobo23.2 %>% filter(Station_ID == "WALKER-CRK-MR")
+
+ggplot()+
+  geom_point(data = walker,  
+             aes(x = date, y = WaterDepth, color = Source), alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "WALKER-CRK-MR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = walker,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "WALKER-CRK-MR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#re-aligned 2023 data using an april staff gauge and that works better
+#now take out specific dates
+walker.2<- walker %>% filter(!between(date, as.Date('2022-11-01'), as.Date('2023-04-08'))) %>% 
+    filter(!between(date, as.Date('2023-05-24'), as.Date('2023-12-30')))
+
+ggplot()+
+  geom_point(data = walker.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "WALKER-CRK-MR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
 
 
+p<- ggplot()+
+  geom_point(data = walker.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "WALKER-CRK-MR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#none of it is matching up??? just pull the whole thing???
+
+#beaver QA/QC ####
+beaver<- hobo23.2 %>% filter(Station_ID == "BEAV-CRK-RR")
+
+
+ggplot()+
+  geom_point(data = beaver,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "BEAV-CRK-RR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = beaver,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "BEAV-CRK-RR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#take out specific points and trailing bit
+beaver.2 <- beaver %>% filter(!(date == "2022-04-20"), !(date == "2023-11-14")) %>% 
+    filter(!between(date, as.Date('2023-06-21'), as.Date('2023-07-04')))
+
+
+ggplot()+
+  geom_point(data = beaver.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "BEAV-CRK-RR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+p<- ggplot()+
+  geom_point(data = beaver.2,  
+             aes(x = date, y = WaterDepth), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "BEAV-CRK-RR", year < 2024),
+             aes(x = Date, y = Staff), color = "darkred", size = 2)
+
+ggplotly(p)
+
+#graph temp and cfs
+ggplot()+
+  geom_point(data = beaver.2,  
+             aes(x = date, y = TempF), color = "blue", alpha = .5)
+
+#cfs
+ggplot()+
+  geom_point(data = beaver.2,  
+             aes(x = date, y = PredCFS), color = "blue", alpha = .5)+
+  geom_point(data = gauges.2 %>% filter(Station_ID == "BEAV-CRK-RR", year < 2024),
+             aes(x = Date, y = CFS, size = 2), color = "darkred")
+
+#split out data by year
+#save each data frame to folder in dropbox
 
 #next steps
+#look at temp data as well
+#look cfs as well compare to pred
 #save the edited data
 #add to previous edited data
 #replicate previous graphs (I think there is script for this)
